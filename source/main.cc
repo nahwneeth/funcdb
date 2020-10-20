@@ -1,100 +1,96 @@
+#include <filesystem>
 #include <iostream>
 #include <string>
 
-#include "meta-command.hpp"
-#include "statement.hpp"
-#include "string-helper.hpp"
-#include "table.hpp"
+#include "file-helper.h"
+#include "match.h"
+#include "meta-command.h"
+#include "statement.h"
+#include "string-helper.h"
+#include "table.h"
 
-enum error {
-    FILE_NAME_NOT_SPECIFIED = 1,
-    TABLE_INIT_ERROR
-};
+using namespace funcdb;
 
-int main(int argc, char** argv)
-{
+enum ERROR { FILE_NAME_NOT_SPECIFIED = 1, FILE_ERROR };
 
-    if (argc < 2) {
-        std::cerr << "Filename not specified\n";
-        return FILE_NAME_NOT_SPECIFIED;
+int main(int argc, char** argv) {
+  if (argc < 2) {
+    std::cerr << "Filename not specified\n";
+    return FILE_NAME_NOT_SPECIFIED;
+  }
+
+  auto filepath = argv[1];
+
+  if (!CreateFileIfNotExist(filepath)) {
+    std::cerr << "Failed to create file " << filepath << "\n";
+    return FILE_ERROR;
+  }
+
+  switch (CheckFileTypeAndPerms(filepath)) {
+    case FileTypeAndPermsResult::Valid:
+      /* do nothing */
+      break;
+    case FileTypeAndPermsResult::NoReadPermission:
+      std::cerr << "No permission to read from " << filepath << "\n";
+      return FILE_ERROR;
+    case FileTypeAndPermsResult::NotRegularFile:
+      std::cerr << filepath << " is not a regular file\n";
+      return FILE_ERROR;
+    case FileTypeAndPermsResult::NoWritePermission:
+      std::cerr << "No permission to write to " << filepath << "\n";
+      return FILE_ERROR;
+  }
+
+  auto table = Table(filepath);
+
+  auto const prompt = std::string("\n[db]: ");
+
+  while (true) {
+    auto input = ReadInput(prompt);
+
+    if (input.empty()) continue;
+
+    if (input[0] == '.') {
+      auto result = DoMetaCommand(input);
+
+      if (result == MetaCommandResult::Success)
+        /* do nothing */;
+      else if (result == MetaCommandResult::Exit)
+        break;
+      else if (result == MetaCommandResult::UnrecognizedCommand)
+        std::cerr << "Unrecognized command [| " << input << " |]\n";
+
+      continue;
     }
 
-    auto filepath = argv[1];
-    auto table_init = funcdb::Table::init(filepath);
+    auto statementRes = Statement::Prepare(input);
 
-    if (std::holds_alternative<funcdb::Table::InitError>(table_init)) {
-        auto const& error = std::get<funcdb::Table::InitError>(table_init);
-
-        switch(error) {
-            case funcdb::Table::InitError::FailedToCreateNewFile :
-                std::cerr << "Failed to create file " << filepath << "\n";
-                break;
-            case funcdb::Table::InitError::NoReadPermission :
-                std::cerr << "No permission to read from " << filepath << "\n";
-                break;
-            case funcdb::Table::InitError::NotRegularFile :
-                std::cerr << filepath << " is not a regular file\n";
-                break;
-            case funcdb::Table::InitError::NoWritePermission :
-                std::cerr << "No permission to write to " << filepath << "\n";
-                break;
-        }
-
-        return TABLE_INIT_ERROR;
-    }
-
-    auto&& table = std::move(std::get<funcdb::Table>(table_init));
-
-    auto const prompt = std::string("\n[db]: ");
-
-    while (true)
-    {
-
-        auto input = funcdb::read_input(prompt);
-
-        if (input.empty()) continue;
-
-        if (input[0] == '.') {
-            auto result = funcdb::do_meta_command(input);
-
-            if (result == funcdb::MetaCommandResult::Success) /* do nothing */ ;
-            else if (result == funcdb::MetaCommandResult::Exit) break;
-            else if (result == funcdb::MetaCommandResult::UnrecognizedCommand) {
-                std::cerr << "Unrecognized command [| " << input << " |]\n";
-            }
-
-            continue;
-        }
-
-        auto statement = funcdb::Statement::prepare(input);
-        
-        if (std::holds_alternative<funcdb::Statement>(statement)) {
-            auto result = std::get<funcdb::Statement>(statement).execute(table);
-
-            switch(result)
-            {
-                case funcdb::Statement::ExecuteResult::Success :
-                    /* do nothing */
-                    break;
-                case funcdb::Statement::ExecuteResult::KeyAlreadyExists :
-                    std::cerr << "Error: Key already exists.\n";
-                    break;
-                case funcdb::Statement::ExecuteResult::KeyDoesntExist :
-                    std::cerr << "Error: Key doesn't exist.\n";
-            }
-        } else {
-            auto error = std::get<funcdb::Statement::PrepareError>(statement);
-            switch(error) {
-                case funcdb::Statement::PrepareError::UnrecognizedStatement:
-                    std::cerr << "Unrecognized token at the start of [| " << input << " |]\n";
-                    break;
-                case funcdb::Statement::PrepareError::StringTooLong:
-                    std::cerr << "String too long.\n";
-                    break;
-                case funcdb::Statement::PrepareError::SyntaxError:
-                    std::cerr << "Syntax error. Couldn't parse statement.\n";
-                    break;
-            }
-        }
-    }
+    Match(statementRes,
+          With{[&table](Statement& statement) {
+                 switch (statement.Execute(table)) {
+                   case Statement::ExecuteResult::Success:
+                     /* do nothing */
+                     break;
+                   case Statement::ExecuteResult::KeyAlreadyExists:
+                     std::cerr << "Error: Key already exists.\n";
+                     break;
+                   case Statement::ExecuteResult::KeyDoesntExist:
+                     std::cerr << "Error: Key doesn't exist.\n";
+                 }
+               },
+               [&input](Statement::PrepareError& error) {
+                 switch (error) {
+                   case Statement::PrepareError::UnrecognizedStatement:
+                     std::cerr << "Unrecognized token at the start of [| "
+                               << input << " |]\n";
+                     break;
+                   case Statement::PrepareError::StringTooLong:
+                     std::cerr << "String too long.\n";
+                     break;
+                   case Statement::PrepareError::SyntaxError:
+                     std::cerr << "Syntax error. Couldn't parse statement.\n";
+                     break;
+                 }
+               }});
+  }
 }

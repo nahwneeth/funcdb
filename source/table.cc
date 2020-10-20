@@ -1,92 +1,44 @@
-#include "table.hpp"
+#include "table.h"
 
+#include <cstring>
 #include <iostream>
 
-#include "b-plus-tree/leaf-node.hpp"
+namespace funcdb {
 
-namespace funcdb
-{
-    namespace stdfs = std::filesystem;
+Table::Table(std::string filepath) : mTree(filepath) {
+#ifdef LOGS
+  std::cerr << "funcdb::gValueSize = " << funcdb::gValueSize << "\n";
+  std::cerr << "funcdb::leafNodeMaxElems() = " << funcdb::leafNodeMaxElems()
+            << "\n";
+#endif
+}
 
-    std::variant<Table, Table::InitError>
-    Table::init(const char* filepath)
-    {
-        auto path = stdfs::path{filepath};
+std::unique_ptr<char[]> Table::SerializeRow(std::string str) {
+  auto buffer = std::make_unique<char[]>(kNodeSize);
+  std::strncpy(buffer.get(), str.c_str(), kNodeSize);
+  return buffer;
+}
 
-        if (stdfs::exists(path)) {
-            if (!stdfs::is_regular_file(path)) {
-                return InitError::NotRegularFile;
-            }
+bool Table::Insert(uint32_t key, std::string value) {
+  Element elem;
+  elem.key = key;
+  elem.value = SerializeRow(value);
+  return mTree.Insert(std::move(elem));
+}
 
-            auto permissions = stdfs::status(path).permissions();
+bool Table::Replace(uint32_t key, std::string value) {
+  Element elem;
+  elem.key = key;
+  elem.value = SerializeRow(value);
+  return mTree.Replace(std::move(elem));
+}
 
-            if ((permissions & stdfs::perms::owner_read) == stdfs::perms::none) {
-                return InitError::NoReadPermission;
-            } else if ((permissions & stdfs::perms::owner_write) == stdfs::perms::none) {
-                return InitError::NoWritePermission;
-            }
-        } else {
-            /*| Open and close in "a+" mode to create file if doesn't exist. |*/
-            auto file = std::fopen(filepath, "a+");
-            auto new_file_created = file != NULL;
-            std::fclose(file);
+void Table::SelectAll() { mTree.Print(std::cout); }
 
-            if (!new_file_created) {
-                return InitError::FailedToCreateNewFile;
-            }
-        }
+bool Table::Select(uint32_t key) { return mTree.PrintValue(std::cout, key); }
 
-        return std::variant<Table, Table::InitError>(std::in_place_type<Table>, filepath);
-    }
-    
-    Table::Table(const char* filepath)
-    {
-        tree = BPlusTree::init(filepath);
-    }
+void Table::Commit() { mTree.Commit(); }
 
-    Table::~Table()
-    {
-        BPlusTree::free(tree);
-    }
+void Table::Rollback() { mTree.Rollback(); }
 
-    bool
-    Table::insert(uint32_t key, std::string value)
-    {
-        char cptr[LeafNode::kValueSize]{};
-        value.copy(cptr, sizeof(cptr));
-        return BPlusTree::insert(tree, key, cptr);
-    }
-
-    bool
-    Table::replace(uint32_t key, std::string value)
-    {
-        char cptr[LeafNode::kValueSize]{};
-        value.copy(cptr, sizeof(cptr));
-        return BPlusTree::replace(tree, key, cptr);
-    }
-
-    void
-    Table::select_all()
-    {
-        BPlusTree::print_all_values(tree, stdout);
-    }
-
-    bool 
-    Table::select(uint32_t key)
-    {
-        return BPlusTree::print_value(tree, stdout, key);
-    }
-
-    void
-    Table::commit()
-    {
-        BPlusTree::write(tree);
-    }
-
-    void 
-    Table::rollback()
-    {
-        BPlusTree::set_from_file(tree);
-    }
-
-} // namespace funcdb
+}  // namespace funcdb
