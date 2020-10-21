@@ -29,15 +29,30 @@ class Statement {
 
  private:
   using PossibleDataTypes =
-      std::variant<uint32_t, std::pair<uint32_t, std::string>, std::nullptr_t>;
+      std::variant<int32_t, std::pair<int32_t, std::string>, std::nullptr_t>;
 
-  enum class Type { Commit, Insert, Replace, Rollback, Select, SelectAll };
+  enum class Type {
+    Commit,
+    Insert,
+    Remove,
+    Replace,
+    Rollback,
+    Select,
+    SelectAll
+  };
 
   Statement(Type type, PossibleDataTypes data = nullptr);
+
+  static std::variant<PrepareError, Statement> PrepareInsertOrReplace(
+      std::vector<std::string> const& words);
+
+  static std::variant<PrepareError, Statement> PrepareSelectOrRemove(
+      std::vector<std::string> const& words);
 
  private:
   static std::string const kCommandInsert;
   static std::string const kCommandSelect;
+  static std::string const kCommandRemove;
   static std::string const kCommandReplace;
   static std::string const kCommandCommit;
   static std::string const kCommandRollback;

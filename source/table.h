@@ -18,13 +18,15 @@ class Table {
   Table(Table const&) = delete;
 
  public:
-  bool Insert(uint32_t key, std::string value);
+  bool Insert(int32_t key, std::string value);
 
   void SelectAll();
 
-  bool Select(uint32_t key);
+  bool Select(int32_t key);
 
-  bool Replace(uint32_t key, std::string value);
+  bool Replace(int32_t key, std::string value);
+
+  bool Remove(int32_t key);
 
   void Commit();
 

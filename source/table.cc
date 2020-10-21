@@ -19,23 +19,25 @@ std::unique_ptr<char[]> Table::SerializeRow(std::string str) {
   return buffer;
 }
 
-bool Table::Insert(uint32_t key, std::string value) {
+bool Table::Insert(int32_t key, std::string value) {
   Element elem;
   elem.key = key;
   elem.value = SerializeRow(value);
   return mTree.Insert(std::move(elem));
 }
 
-bool Table::Replace(uint32_t key, std::string value) {
+bool Table::Replace(int32_t key, std::string value) {
   Element elem;
   elem.key = key;
   elem.value = SerializeRow(value);
   return mTree.Replace(std::move(elem));
 }
 
+bool Table::Remove(int32_t key) { return mTree.Remove(key); }
+
 void Table::SelectAll() { mTree.Print(std::cout); }
 
-bool Table::Select(uint32_t key) { return mTree.PrintValue(std::cout, key); }
+bool Table::Select(int32_t key) { return mTree.PrintValue(std::cout, key); }
 
 void Table::Commit() { mTree.Commit(); }
 

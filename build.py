@@ -1,7 +1,7 @@
 cpp_ver         =   17
 
 enable_logging  =   False
-enable_debug    =   True
+enable_debug    =   False
 
 output_dir      =   ['out']
 exe_name        =   'funcdb.exe'

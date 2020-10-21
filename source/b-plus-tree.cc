@@ -93,6 +93,17 @@ bool BPlusTree::Replace(Element elem) {
   return true;
 }
 
+bool BPlusTree::Remove(int32_t key) {
+  auto leafNodeIndex = LeafNodeIndexForKey(key);
+  auto& node = std::get<LeafNode>(Get(leafNodeIndex));
+
+  auto res = node.Search(key);
+  if (!res.exists) return false;
+
+  node.mElems.erase(std::next(node.mElems.begin(), res.index));
+  return true;
+}
+
 void BPlusTree::Commit() {
   for (std::size_t i = 0; i < mNodes.size(); ++i) {
     if (!mNodes[i]) continue;

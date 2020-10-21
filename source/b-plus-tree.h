@@ -23,6 +23,8 @@ class BPlusTree {
 
   bool Replace(Element elem);
 
+  bool Remove(int32_t key);
+
   void Commit();
 
   void Rollback();
