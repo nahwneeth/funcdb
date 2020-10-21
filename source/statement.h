@@ -1,7 +1,6 @@
 #if !defined(FUNCDB_STATEMENT_HPP)
 #define FUNCDB_STATEMENT_HPP
 
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -13,25 +12,40 @@ namespace funcdb {
 
 class Statement {
  public:
-  enum class PrepareError { UnrecognizedStatement, StringTooLong, SyntaxError };
+  enum class PrepareError {
+    EmptyColumnName,
+    KeyNotFirst,
+    RepeatedColumnNames,
+    StringTooLong,
+    SyntaxError,
+    UnknowDataType,
+    UnrecognizedStatement,
+    WrongDataType
+  };
 
   static std::variant<PrepareError, Statement> Prepare(
-      std::string const& input);
+      RowInfo const& info, std::string const& input);
 
  public:
   enum class ExecuteResult {
-    Success,
+    // ColumnDoesntExist,
     KeyAlreadyExists,
     KeyDoesntExist,
+    Success,
+    TableAlreadyCreated,
+    TableNotCreated,
   };
 
   ExecuteResult Execute(Table& table) const;
 
  private:
   using PossibleDataTypes =
-      std::variant<int32_t, std::pair<int32_t, std::string>, std::nullptr_t>;
+      std::variant<int32_t, std::vector<std::variant<int32_t, std::string>>,
+                   std::vector<std::pair<DataType, std::string>>,
+                   std::nullptr_t>;
 
   enum class Type {
+    Create,
     Commit,
     Insert,
     Remove,
@@ -43,13 +57,17 @@ class Statement {
 
   Statement(Type type, PossibleDataTypes data = nullptr);
 
-  static std::variant<PrepareError, Statement> PrepareInsertOrReplace(
+  static std::variant<PrepareError, Statement> PrepareCreate(
       std::vector<std::string> const& words);
+
+  static std::variant<PrepareError, Statement> PrepareInsertOrReplace(
+      RowInfo const& info, std::vector<std::string> const& words);
 
   static std::variant<PrepareError, Statement> PrepareSelectOrRemove(
       std::vector<std::string> const& words);
 
  private:
+  static std::string const kCommandCreate;
   static std::string const kCommandInsert;
   static std::string const kCommandSelect;
   static std::string const kCommandRemove;

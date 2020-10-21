@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    auto statementRes = Statement::Prepare(input);
+    auto statementRes = Statement::Prepare(table.GetRowInfo(), input);
 
     Match(statementRes,
           With{[&table](Statement& statement) {
@@ -76,6 +76,12 @@ int main(int argc, char** argv) {
                      break;
                    case Statement::ExecuteResult::KeyDoesntExist:
                      std::cerr << "Error: Key doesn't exist.\n";
+                     break;
+                   case Statement::ExecuteResult::TableAlreadyCreated:
+                     std::cerr << "A table already exists.\n";
+                     break;
+                   case Statement::ExecuteResult::TableNotCreated:
+                     std::cerr << "Table doesn't exist. Create a Table.\n";
                  }
                },
                [&input](Statement::PrepareError& error) {
@@ -90,6 +96,21 @@ int main(int argc, char** argv) {
                    case Statement::PrepareError::SyntaxError:
                      std::cerr << "Syntax error. Couldn't parse statement.\n";
                      break;
+                   case Statement::PrepareError::EmptyColumnName:
+                     std::cerr << "Empty column name given.\n";
+                     break;
+                   case Statement::PrepareError::RepeatedColumnNames:
+                     std::cerr << "Column names should be unqiue.\n";
+                     break;
+                   case Statement::PrepareError::UnknowDataType:
+                     std::cerr << "Unkown datatype given.\n";
+                     break;
+                   case Statement::PrepareError::KeyNotFirst:
+                     std::cerr
+                         << "Key of type i32 should be the first column.\n";
+                     break;
+                   case Statement::PrepareError::WrongDataType:
+                     std::cerr << "Wrong Datatype entered.\n";
                  }
                }});
   }

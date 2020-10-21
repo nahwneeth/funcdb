@@ -2,11 +2,14 @@
 #define FUNCDB_TABLE_HPP
 
 #include <filesystem>
+#include <functional>
 #include <memory>
+#include <utility>
 #include <variant>
 #include <vector>
 
 #include "b-plus-tree.h"
+#include "row-info.h"
 
 namespace funcdb {
 
@@ -18,13 +21,17 @@ class Table {
   Table(Table const&) = delete;
 
  public:
-  bool Insert(int32_t key, std::string value);
+  RowInfo const& GetRowInfo() const;
+
+  bool SetColumns(std::vector<std::pair<DataType, std::string>> const& cols);
+
+  bool Insert(std::vector<std::variant<int32_t, std::string>> const& row);
 
   void SelectAll();
 
   bool Select(int32_t key);
 
-  bool Replace(int32_t key, std::string value);
+  bool Replace(std::vector<std::variant<int32_t, std::string>> const& row);
 
   bool Remove(int32_t key);
 
@@ -32,8 +39,10 @@ class Table {
 
   void Rollback();
 
+  bool IsCreated();
+
  private:
-  std::unique_ptr<char[]> SerializeRow(std::string str);
+  Element GetElement(std::vector<std::variant<int32_t, std::string>> const& row);
 
  private:
   BPlusTree mTree;

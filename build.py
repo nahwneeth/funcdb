@@ -15,6 +15,7 @@ source_files    =   [
                         ['main.cc'],
                         ['meta-command.cc'],
                         ['node.cc'],
+                        ['row-info.cc'],
                         ['statement.cc'],
                         ['string-helper.cc'],
                         ['table.cc']

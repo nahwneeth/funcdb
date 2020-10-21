@@ -4,16 +4,26 @@
 #include <filesystem>
 #include <variant>
 #include <vector>
+#include <functional>
 
 #include "match.h"
 #include "internal-node.h"
 #include "leaf-node.h"
+#include "row-info.h"
 
 namespace funcdb {
 
 class BPlusTree {
  public:
+  using PrintFunc = std::function<void(int32_t, const char*)>;
+
+  static std::size_t constexpr kStartNodeIndex = 1;
+
   BPlusTree(std::filesystem::path path);
+
+  RowInfo GetRowInfo();
+
+  bool SetRowInfo(RowInfo const& info);
 
   void Print(std::ostream& ostreamObj);
 
@@ -40,6 +50,8 @@ class BPlusTree {
 
   void Print(std::ostream& ostreamObj, NodeVariant const& node);
 
+  void Printer(std::ostream& ostreamObj, int32_t key, const char* value);
+
   std::size_t LeafNodeIndexForKey(int32_t key, std::size_t* height = nullptr);
 
   std::size_t AddNewRootNode(std::size_t leftMostChild);
@@ -56,6 +68,8 @@ class BPlusTree {
   std::filesystem::path const mPath;
   std::fstream mFstream;
   std::size_t mNumNodesInFile;
+
+  RowInfo mRowInfo;
 };
 
 }  // namespace funcdb

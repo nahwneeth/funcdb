@@ -2,11 +2,12 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 namespace funcdb {
 
-std::size_t gValueSize = 255;
+std::size_t gValueSize = 0;
 
 BPlusTree::BPlusTree(std::filesystem::path path)
     : mNodes{}, mPath{path}, mFstream{} {
@@ -16,25 +17,51 @@ BPlusTree::BPlusTree(std::filesystem::path path)
 
 void BPlusTree::InitFromFile() {
   auto fileLength = std::filesystem::file_size(mPath);
-  auto mNumNodesInFile = fileLength / kNodeSize;
+  mNumNodesInFile = fileLength / kNodeSize;
 
   mNodes.resize(mNumNodesInFile);
 
+  mRowInfo = GetRowInfo();
+  gValueSize = mRowInfo.ValueSize();
+
   if (mNumNodesInFile == 0) {
-    mNodes.push_back(
-        std::make_unique<NodeVariant>(std::in_place_type<LeafNode>, 0, 0));
+    mNodes.push_back(nullptr);
+    mNodes.push_back(std::make_unique<NodeVariant>(std::in_place_type<LeafNode>,
+                                                   kStartNodeIndex, 0));
   }
 
   auto const getParentIndex = [](NodeVariant const& node) {
     return std::visit([](auto&& node) { return node.mParentIndex; }, node);
   };
 
-  std::size_t rootIndex = 0;
+  std::size_t rootIndex = kStartNodeIndex;
   std::size_t parentIndex = 0;
   while ((parentIndex = getParentIndex(Get(rootIndex))) != 0)
     rootIndex = parentIndex;
 
   mRootIndex = rootIndex;
+}
+
+RowInfo BPlusTree::GetRowInfo() {
+  if (mNumNodesInFile == 0) return RowInfo();
+
+  char rawMem[kNodeSize];
+  mFstream.seekg(0, std::ios::beg);
+  mFstream.read(rawMem, kNodeSize);
+
+  return RowInfo(rawMem);
+}
+
+bool BPlusTree::SetRowInfo(RowInfo const& info) {
+  if (!mRowInfo.mColumns.empty()) return false;
+
+  auto buff = info.Serialize();
+  mFstream.seekp(0, std::ios::beg);
+  mFstream.write(buff.get(), kNodeSize);
+
+  mRowInfo = info;
+  gValueSize = mRowInfo.ValueSize();
+  return true;
 }
 
 void BPlusTree::AddNodeFromFile(std::size_t index) {
@@ -66,10 +93,36 @@ bool BPlusTree::PrintValue(std::ostream& ostreamObj, int32_t key) {
   auto searchRes = node.Search(key);
   if (!searchRes.exists) return false;
 
-  ostreamObj << node.mElems[searchRes.index].key << "\t: ";
-  ostreamObj.write(node.mElems[searchRes.index].value.get(), gValueSize)
-      << "\n";
+  Printer(ostreamObj, key, node.mElems[searchRes.index].value.get());
   return true;
+}
+
+void BPlusTree::Printer(std::ostream& ostreamObj, int32_t key,
+                        const char* value) {
+  auto&& cols = mRowInfo.mColumns;
+  auto const keyOffset = DTSize(cols[0].type);
+
+  ostreamObj << cols[0].columnName << "\t: " << key << "\n";
+
+  auto const i32Size = DTSize(DataType::i32);
+  auto const c100Size = DTSize(DataType::c100);
+
+  for (std::size_t i = 1; i < cols.size(); ++i) {
+#ifdef LOGS
+    std::cerr << "mPrinterLambda\n";
+    std::cerr << "\t i = " << i << "\n";
+    std::cerr << "\t offset = " << cols[i].offset - keyOffset << "\n";
+#endif
+    ostreamObj << cols[i].columnName << "\t: ";
+    if (cols[i].type == DataType::i32) {
+      int32_t val;
+      std::memcpy(&val, value + cols[i].offset - keyOffset, i32Size);
+      ostreamObj << val << "\n";
+    } else {
+      ostreamObj.write(value + cols[i].offset - keyOffset, c100Size) << "\n";
+    }
+  }
+  ostreamObj << "\n";
 }
 
 bool BPlusTree::Insert(Element elem) {
@@ -105,7 +158,7 @@ bool BPlusTree::Remove(int32_t key) {
 }
 
 void BPlusTree::Commit() {
-  for (std::size_t i = 0; i < mNodes.size(); ++i) {
+  for (std::size_t i = kStartNodeIndex; i < mNodes.size(); ++i) {
     if (!mNodes[i]) continue;
 
     auto&& serializedBuffer =
@@ -129,8 +182,7 @@ void BPlusTree::Rollback() {
 void BPlusTree::Print(std::ostream& ostreamObj, NodeVariant const& node) {
   Match(node, With{[&](LeafNode const& lN) {
                      for (auto&& elem : lN.mElems) {
-                       ostreamObj << elem.key << "\t: ";
-                       ostreamObj.write(elem.value.get(), gValueSize) << "\n";
+                       Printer(ostreamObj, elem.key, elem.value.get());
                      }
                    },
                    [&, this](InternalNode const& iN) {
