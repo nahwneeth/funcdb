@@ -24,8 +24,8 @@ void BPlusTree::InitFromFile() {
   mRowInfo = GetRowInfo();
   gValueSize = mRowInfo.ValueSize();
 
-  if (mNumNodesInFile == 0) {
-    mNodes.push_back(nullptr);
+  if (mNumNodesInFile <= 1) {
+    if (mNumNodesInFile == 0) mNodes.push_back(nullptr);
     mNodes.push_back(std::make_unique<NodeVariant>(std::in_place_type<LeafNode>,
                                                    kStartNodeIndex, 0));
   }
