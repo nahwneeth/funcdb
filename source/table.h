@@ -8,8 +8,7 @@
 #include <variant>
 #include <vector>
 
-#include "b-plus-tree.h"
-#include "row-info.h"
+#include "b-plus-tree/b-plus-tree.h"
 
 namespace funcdb {
 

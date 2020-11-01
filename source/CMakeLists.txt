@@ -1,0 +1,14 @@
+add_executable(
+    funcdb
+    "main.cc"
+    "meta-command.cc"
+    "statement.cc"
+    "table.cc"
+    "helpers/file-helper.cc"
+    "helpers/string-helper.cc"
+    "b-plus-tree/b-plus-tree.cc"
+    "b-plus-tree/row-info.cc"
+    "b-plus-tree/node/internal-node.cc"
+    "b-plus-tree/node/leaf-node.cc"
+    "b-plus-tree/node/node.cc"
+)

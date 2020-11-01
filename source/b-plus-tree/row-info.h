@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "node.h"
+#include "b-plus-tree/node/node.h"
 
 namespace funcdb {
 

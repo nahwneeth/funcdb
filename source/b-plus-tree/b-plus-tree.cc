@@ -5,6 +5,8 @@
 #include <cstring>
 #include <iostream>
 
+#include "helpers/match.h"
+
 namespace funcdb {
 
 std::size_t gValueSize = 0;

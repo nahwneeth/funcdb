@@ -6,10 +6,9 @@
 #include <vector>
 #include <functional>
 
-#include "match.h"
-#include "internal-node.h"
-#include "leaf-node.h"
-#include "row-info.h"
+#include "b-plus-tree/node/internal-node.h"
+#include "b-plus-tree/node/leaf-node.h"
+#include "b-plus-tree/row-info.h"
 
 namespace funcdb {
 

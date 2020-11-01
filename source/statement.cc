@@ -3,8 +3,7 @@
 #include <iostream>
 #include <set>
 
-#include "string-helper.h"
-#include "table.h"
+#include "helpers/string-helper.h"
 
 namespace funcdb {
 
@@ -110,10 +109,10 @@ Statement::PrepareSelectOrRemove(std::vector<std::string> const& words) {
   if (words.size() == 1 && isSelect) {
     return Statement(Type::SelectAll);
   } else if (words.size() == 1 + 1) {
-    auto key = 0LL;
+    auto key = 0;
 
     try {
-      key = std::stoul(words[1]);
+      key = std::stoi(words[1]);
     } catch (const std::exception& e) {
       return PrepareError::SyntaxError;
     }

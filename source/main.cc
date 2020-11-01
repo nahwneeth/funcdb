@@ -2,18 +2,18 @@
 #include <iostream>
 #include <string>
 
-#include "file-helper.h"
-#include "match.h"
+#include "helpers/file-helper.h"
+#include "helpers/match.h"
+#include "helpers/string-helper.h"
 #include "meta-command.h"
 #include "statement.h"
-#include "string-helper.h"
 #include "table.h"
 
 using namespace funcdb;
 
 enum ERROR { FILE_NAME_NOT_SPECIFIED = 1, FILE_ERROR };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   if (argc < 2) {
     std::cerr << "Filename not specified\n";
     return FILE_NAME_NOT_SPECIFIED;
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     auto statementRes = Statement::Prepare(table.GetRowInfo(), input);
 
     Match(statementRes,
-          With{[&table](Statement& statement) {
+          With{[&table](Statement &statement) {
                  switch (statement.Execute(table)) {
                    case Statement::ExecuteResult::Success:
                      /* do nothing */
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
                      std::cerr << "Table doesn't exist. Create a Table.\n";
                  }
                },
-               [&input](Statement::PrepareError& error) {
+               [&input](Statement::PrepareError &error) {
                  switch (error) {
                    case Statement::PrepareError::UnrecognizedStatement:
                      std::cerr << "Unrecognized token at the start of [| "
