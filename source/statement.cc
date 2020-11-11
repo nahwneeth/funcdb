@@ -110,10 +110,10 @@ Statement::PrepareSelectOrRemove(std::vector<std::string> const& words) {
   if (words.size() == 1 && isSelect) {
     return Statement(Type::SelectAll);
   } else if (words.size() == 1 + 1) {
-    auto key = 0LL;
+    int32_t key;
 
     try {
-      key = std::stoul(words[1]);
+      key = std::stoi(words[1]);
     } catch (const std::exception& e) {
       return PrepareError::SyntaxError;
     }
