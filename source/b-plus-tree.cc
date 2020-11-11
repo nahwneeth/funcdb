@@ -93,7 +93,7 @@ bool BPlusTree::PrintValue(std::ostream& ostreamObj, int32_t key) {
   auto searchRes = node.Search(key);
   if (!searchRes.exists) return false;
 
-  Printer(ostreamObj, key, node.mElems[searchRes.index].value.get());
+  Printer(ostreamObj, key, node.mRecords[searchRes.index].value.get());
   return true;
 }
 
@@ -142,7 +142,7 @@ bool BPlusTree::Replace(Record elem) {
   auto searchRes = node.Search(elem.key);
   if (!searchRes.exists) return false;
 
-  node.mElems[searchRes.index] = std::move(elem);
+  node.mRecords[searchRes.index] = std::move(elem);
   return true;
 }
 
@@ -153,7 +153,7 @@ bool BPlusTree::Remove(int32_t key) {
   auto res = node.Search(key);
   if (!res.exists) return false;
 
-  node.mElems.erase(std::next(node.mElems.begin(), res.index));
+  node.mRecords.erase(std::next(node.mRecords.begin(), res.index));
   return true;
 }
 
@@ -181,7 +181,7 @@ void BPlusTree::Rollback() {
 
 void BPlusTree::Print(std::ostream& ostreamObj, NodeVariant const& node) {
   Match(node, With{[&](LeafNode const& lN) {
-                     for (auto&& elem : lN.mElems) {
+                     for (auto&& elem : lN.mRecords) {
                        Printer(ostreamObj, elem.key, elem.value.get());
                      }
                    },
@@ -293,13 +293,13 @@ bool BPlusTree::Insert(LeafNode& node, Record& elem) {
   auto searchRes = node.Search(elem.key);
   if (searchRes.exists) return false;
 
-  if (node.mElems.size() < leafNodeMaxElems()) {
+  if (node.mRecords.size() < leafNodeMaxElems()) {
     node.Insert(searchRes.index, elem);
     return true;
   }
 
-  auto indexToMoveElems = node.mElems.size() / 2;
-  if (elem.key > node.mElems[indexToMoveElems].key) ++indexToMoveElems;
+  auto indexToMoveElems = node.mRecords.size() / 2;
+  if (elem.key > node.mRecords[indexToMoveElems].key) ++indexToMoveElems;
 
   std::size_t parentIndex = mRootIndex != node.mIndex
                                 ? node.mParentIndex
@@ -311,17 +311,17 @@ bool BPlusTree::Insert(LeafNode& node, Record& elem) {
 
   parentIndex =
       InsertInternal(std::get<InternalNode>(Get(parentIndex)),
-                     node.mElems[indexToMoveElems].key, anotherNodeIndex);
+                     node.mRecords[indexToMoveElems].key, anotherNodeIndex);
 
   auto& anotherNode = std::get<LeafNode>(Get(anotherNodeIndex));
   anotherNode.mParentIndex = parentIndex;
 
-  std::move(std::next(node.mElems.begin(), indexToMoveElems), node.mElems.end(),
-            std::back_inserter(anotherNode.mElems));
+  std::move(std::next(node.mRecords.begin(), indexToMoveElems), node.mRecords.end(),
+            std::back_inserter(anotherNode.mRecords));
 
-  node.mElems.resize(indexToMoveElems);
+  node.mRecords.resize(indexToMoveElems);
 
-  if (elem.key < anotherNode.mElems[0].key) {
+  if (elem.key < anotherNode.mRecords[0].key) {
     anotherNode.Insert(searchRes.index, elem);
   } else {
     anotherNode.Insert(searchRes.index - indexToMoveElems, elem);

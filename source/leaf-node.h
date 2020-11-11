@@ -37,7 +37,7 @@ class LeafNode : public Node {
   SearchResult Search(int32_t key) const;
 
  public:
-  std::vector<Record> mElems;
+  std::vector<Record> mRecords;
 
   static NodeType constexpr mType = NodeType::Leaf;
 };
