@@ -29,9 +29,9 @@ class BPlusTree {
 
   bool PrintValue(std::ostream& ostreamObj, int32_t key);
 
-  bool Insert(Element elem);
+  bool Insert(Record elem);
 
-  bool Replace(Element elem);
+  bool Replace(Record elem);
 
   bool Remove(int32_t key);
 
@@ -59,7 +59,7 @@ class BPlusTree {
   std::size_t InsertInternal(InternalNode& node, int32_t key,
                              std::size_t child);
 
-  bool Insert(LeafNode& node, Element& elem);
+  bool Insert(LeafNode& node, Record& elem);
 
  public:
   std::vector<std::unique_ptr<NodeVariant> > mNodes;

@@ -25,7 +25,7 @@ LeafNode::LeafNode(std::size_t index, std::fstream& fstream,
   mElems.reserve(numElems);
 
   for (std::size_t i = 0; i < numElems; ++i) {
-    Element elem;
+    Record elem;
     fstream.read((char*)&elem.key, sizeof(elem.key));
 
     elem.value = std::make_unique<char[]>(gValueSize);
@@ -50,7 +50,7 @@ std::unique_ptr<char[]> LeafNode::Serialize() const {
   std::memcpy(buffer.get() + offset, &numElems, sizeof(numElems));
   offset += sizeof(numElems);
 
-  std::size_t keySize = sizeof(decltype(Element::key));
+  std::size_t keySize = sizeof(decltype(Record::key));
 
   for (std::size_t i = 0; i < numElems; ++i) {
     std::memcpy(buffer.get() + offset, &mElems[i].key, keySize);
@@ -63,7 +63,7 @@ std::unique_ptr<char[]> LeafNode::Serialize() const {
   return buffer;
 }
 
-void LeafNode::Insert(std::size_t index, Element& elem) {
+void LeafNode::Insert(std::size_t index, Record& elem) {
   mElems.insert(std::next(mElems.begin(), index), std::move(elem));
 }
 

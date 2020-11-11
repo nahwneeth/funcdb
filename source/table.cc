@@ -18,9 +18,9 @@ bool Table::SetColumns(
 
 RowInfo const& Table::GetRowInfo() const { return mTree.mRowInfo; }
 
-Element Table::GetElement(
+Record Table::GetElement(
     std::vector<std::variant<int32_t, std::string>> const& row) {
-  auto elem = Element();
+  auto elem = Record();
   elem.key = std::get<int32_t>(row[0]);
   elem.value = std::make_unique<char[]>(gValueSize);
 

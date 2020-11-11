@@ -42,7 +42,7 @@ class Table {
   bool IsCreated();
 
  private:
-  Element GetElement(std::vector<std::variant<int32_t, std::string>> const& row);
+  Record GetElement(std::vector<std::variant<int32_t, std::string>> const& row);
 
  private:
   BPlusTree mTree;

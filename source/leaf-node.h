@@ -13,7 +13,7 @@ namespace funcdb {
 extern std::size_t gValueSize;
 std::size_t leafNodeMaxElems();
 
-struct Element {
+struct Record {
   int32_t key;
   std::unique_ptr<char[]> value;
 };
@@ -27,7 +27,7 @@ class LeafNode : public Node {
 
   std::unique_ptr<char[]> Serialize() const;
 
-  void Insert(std::size_t index, Element& elem);
+  void Insert(std::size_t index, Record& elem);
 
   struct SearchResult {
     bool exists;
@@ -37,7 +37,7 @@ class LeafNode : public Node {
   SearchResult Search(int32_t key) const;
 
  public:
-  std::vector<Element> mElems;
+  std::vector<Record> mElems;
 
   static NodeType constexpr mType = NodeType::Leaf;
 };

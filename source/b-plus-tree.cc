@@ -125,7 +125,7 @@ void BPlusTree::Printer(std::ostream& ostreamObj, int32_t key,
   ostreamObj << "\n";
 }
 
-bool BPlusTree::Insert(Element elem) {
+bool BPlusTree::Insert(Record elem) {
   std::size_t height;
   auto leafNodeIndex = LeafNodeIndexForKey(elem.key, &height);
 
@@ -135,7 +135,7 @@ bool BPlusTree::Insert(Element elem) {
   return Insert(std::get<LeafNode>(Get(leafNodeIndex)), elem);
 }
 
-bool BPlusTree::Replace(Element elem) {
+bool BPlusTree::Replace(Record elem) {
   std::size_t leafNodeIndex = LeafNodeIndexForKey(elem.key);
   auto& node = std::get<LeafNode>(Get(leafNodeIndex));
 
@@ -289,7 +289,7 @@ std::size_t BPlusTree::InsertInternal(InternalNode& node, int32_t key,
   }
 }
 
-bool BPlusTree::Insert(LeafNode& node, Element& elem) {
+bool BPlusTree::Insert(LeafNode& node, Record& elem) {
   auto searchRes = node.Search(elem.key);
   if (searchRes.exists) return false;
 
